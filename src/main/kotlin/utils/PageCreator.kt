@@ -1,8 +1,6 @@
 package utils
 
 import com.paginationtest.paginationtest.domain.PageResponse
-import kotlin.math.ceil
-import kotlin.math.round
 import kotlin.math.roundToInt
 
 fun <T> createPage(contents: List<T>, page: Int, size: Int, totalElements: Long): PageResponse<T> {
