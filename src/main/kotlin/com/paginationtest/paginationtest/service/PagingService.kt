@@ -43,7 +43,8 @@ class PagingService(
                 break
             }
 
-            val results = repo.list(localPage, size).contents
+            val fetchedPage = repo.list(localPage, size)
+            val results = fetchedPage.contents
             if(results.size >= size) {
                 fetchedContents.addAll(results)
                 break
