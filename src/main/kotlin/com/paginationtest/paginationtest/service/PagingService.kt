@@ -56,5 +56,6 @@ class PagingService(
         }
 
         val results = fetchedContents.subList(currOffset, minOf(size, fetchedContents.size))
-        return createPage(results, page, size, totalElements) }
+        return createPage(results, page, size, totalElements)
+    }
 }
