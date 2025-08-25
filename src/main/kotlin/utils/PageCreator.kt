@@ -9,7 +9,7 @@ fun <T> createPage(contents: List<T>, page: Int, size: Int, totalElements: Long)
     val limInf = limSup - size
 
 
-    var totalPages = (totalElements.toDouble() / size).roundToInt()
+    val totalPages = (totalElements.toDouble() / size).roundToInt()
 
     if(limInf > contents.size) {
         return PageResponse(emptyList(), totalElements, totalPages, page, 0)
