@@ -32,7 +32,7 @@ class PagingService(
         var totalElements = 0L
 
         repositories.map {
-            totalElements += it.list(1,1).totalElements
+            totalElements += it.getTotalElements()
         }
 
         val fetchedContents = mutableListOf<Content>()
@@ -55,6 +55,5 @@ class PagingService(
         }
 
         val results = fetchedContents.subList(currOffset, minOf(size, fetchedContents.size))
-        return createPage(results, page, size, totalElements)
-    }
+        return createPage(results, page, size, totalElements) }
 }
