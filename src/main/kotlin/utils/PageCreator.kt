@@ -1,6 +1,7 @@
 package utils
 
 import com.paginationtest.paginationtest.domain.PageResponse
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 fun <T> createPage(contents: List<T>, page: Int, size: Int, totalElements: Long): PageResponse<T> {
@@ -9,7 +10,7 @@ fun <T> createPage(contents: List<T>, page: Int, size: Int, totalElements: Long)
     val limInf = limSup - size
 
 
-    val totalPages = (totalElements.toDouble() / size).roundToInt()
+    val totalPages = ceil(totalElements.toDouble() / size).roundToInt()
 
     if(limInf > contents.size) {
         return PageResponse(emptyList(), totalElements, totalPages, page, 0)
