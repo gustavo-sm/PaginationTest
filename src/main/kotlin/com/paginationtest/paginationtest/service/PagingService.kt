@@ -21,7 +21,7 @@ class PagingService(
     fun pc() {
 
         val repositories = listOf(repository1, repository2)
-        println(list(repositories, 3, 6))
+        println(list(repositories, 2, 6))
     }
 
     fun list(repositories: List<Repository>, page: Int, size: Int): PageResponse<Content> {
@@ -41,51 +41,32 @@ class PagingService(
             (totalElements / size) + 1
         }
 
-        val fetchedContents = mutableListOf<Content>()
+        var resultsOffset = 0
 
-        var passedOffset = 0
-        var reposOffset = 0
+        val resultsContent = mutableListOf<Content>()
 
-        var toComplete = size
+        for (repo in repositories) {
 
-        while (toComplete > 0) {
-
-            for (repo in repositories) {
-
-                if (fetchedContents.size >= size) {
-                    break
-                }
-
-                var pageToFetch = ceil(limSup.toDouble() / size).roundToInt()
-
-                if((fetchedContents.isNotEmpty() && passedOffset > 0) || (fetchedContents.isEmpty() && passedOffset == 0)) {
-                   pageToFetch = 1
-                }
-
-                val fetchedRepo = repo.list(pageToFetch, size)
-                val currLocalPage = fetchedRepo.contents
-                reposOffset += currLocalPage.size
-
-                if (currLocalPage.isNotEmpty() && currLocalPage.size <= size && reposOffset >= limInf) {
-
-                    fetchedContents.addAll(currLocalPage.subList(0, minOf(size, currLocalPage.size)))
-                    toComplete -= fetchedContents.size
-                    passedOffset += fetchedContents.size
-                }
-
-                while(reposOffset >= limInf && fetchedContents.size < size && pageToFetch < fetchedRepo.totalPages) {
-
-                    val fetchedRepo = repo.list(pageToFetch, size)
-                    val currLocalPage = fetchedRepo.contents
-                    reposOffset += currLocalPage.size
-                    pageToFetch++
-                    fetchedContents.addAll(currLocalPage)
-                }
+            if (resultsContent.size >= size) {
+                break
             }
+
+            var pageToFetch = ceil(limSup.toDouble()/size).roundToInt()
+
+            if(resultsOffset > 0) {
+                pageToFetch = 1
+            }
+
+            val fetchedRepo = repo.list(pageToFetch, size)
+            val currLocalPage = fetchedRepo.contents
+
+            resultsContent.addAll(currLocalPage)
+            resultsOffset += resultsContent.size
         }
 
 
-        val results = fetchedContents.subList(0, minOf(size, fetchedContents.size))
+
+        val results = resultsContent.subList(0, minOf(size, resultsContent.size))
 
         return PageResponse(
             results,
