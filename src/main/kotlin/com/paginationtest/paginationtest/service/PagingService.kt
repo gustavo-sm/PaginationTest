@@ -21,7 +21,7 @@ class PagingService(
     fun pc() {
 
         val repositories = listOf(repository1, repository2)
-        println(list(repositories, 3, 6))
+        println(list(repositories, 1, 1000))
     }
 
     fun list(repositories: List<Repository>, page: Int, size: Int): PageResponse<Content> {
