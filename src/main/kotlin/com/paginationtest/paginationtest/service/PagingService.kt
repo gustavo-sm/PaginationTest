@@ -21,59 +21,80 @@ class PagingService(
     fun pc() {
 
         val repositories = listOf(repository1, repository2)
-        println(list(repositories, 2, 6))
+        println(list(repositories, 3, 6))
     }
 
     fun list(repositories: List<Repository>, page: Int, size: Int): PageResponse<Content> {
-
-        val limInf = (page - 1) * size
-        val limSup = limInf + size
-
+        val offsetGlobal = (page - 1) * size
+        var collected = 0
         var totalElements = 0L
 
-        repositories.map {
-            totalElements += it.getTotalElements()
+        val result = mutableListOf<Content>()
+
+        val repoElementCounts = repositories.map {
+            val count = it.getTotalElements()
+            totalElements += count
+            count
         }
 
-        val totalPages = if(totalElements % size == 0L) {
-            totalElements / size
-        } else {
-            (totalElements / size) + 1
-        }
+        val totalPages = ceil(totalElements.toDouble() / size).toInt()
+        var globalOffsetTracker = 0L
 
-        var resultsOffset = 0
+        for ((index, repo) in repositories.withIndex()) {
+            val repoTotal = repoElementCounts[index]
 
-        val resultsContent = mutableListOf<Content>()
+            if (collected >= size) break
 
-        for (repo in repositories) {
+            val repoStart = globalOffsetTracker
+            val repoEnd = globalOffsetTracker + repoTotal
 
-            if (resultsContent.size >= size) {
-                break
+            // Se offset global está além deste repo, continue
+            if (offsetGlobal >= repoEnd) {
+                globalOffsetTracker += repoTotal
+                continue
             }
 
-            var pageToFetch = ceil(limSup.toDouble()/size).roundToInt()
+            // Calcular o offset local para este repositório
+            val localOffset = maxOf(0, offsetGlobal - repoStart).toInt()
 
-            if(resultsOffset > 0) {
-                pageToFetch = 1
+            var localPage = localOffset / size + 1
+            val localIndex = localOffset % size
+
+            // Loop de busca dentro do repositório atual
+            while (collected < size) {
+
+                val response = repo.list(localPage, size)
+                val pageContent = response.contents
+
+                if (pageContent.isEmpty()) break
+
+                // Pular elementos iniciais se for a primeira página com offset
+                val fromIndex = if (localPage == (localOffset / size + 1)) localIndex else 0
+
+                val itemsToAdd = pageContent.drop(fromIndex).take(size - collected)
+                result.addAll(itemsToAdd)
+                collected += itemsToAdd.size
+
+                if (itemsToAdd.size < (pageContent.size - fromIndex)) {
+                    break
+                }
+
+                if (pageContent.size < size) {
+                    break
+                }
+
+                localPage += 1
             }
 
-            val fetchedRepo = repo.list(pageToFetch, size)
-            val currLocalPage = fetchedRepo.contents
-
-            resultsContent.addAll(currLocalPage)
-            resultsOffset += resultsContent.size
+            globalOffsetTracker += repoTotal
         }
-
-
-
-        val results = resultsContent.subList(0, minOf(size, resultsContent.size))
 
         return PageResponse(
-            results,
+            result,
             totalElements,
-            totalPages.toInt(),
+            totalPages,
             page,
-            results.size
+            result.size
         )
     }
 }
