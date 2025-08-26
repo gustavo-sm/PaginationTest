@@ -7,7 +7,7 @@ import com.paginationtest.paginationtest.repository.Repository1
 import com.paginationtest.paginationtest.repository.Repository2
 import jakarta.annotation.PostConstruct
 import org.springframework.stereotype.Service
-import utils.createPage
+import kotlin.math.abs
 
 @Service
 class PagingService(
@@ -19,15 +19,15 @@ class PagingService(
     fun pc() {
 
         val repositories = listOf(repository1, repository2)
-        println(list(repositories, 2, 14))
+        println(list(repositories, 1, 6))
     }
 
     fun list(repositories: List<Repository>, page: Int, size: Int): PageResponse<Content> {
 
-        val currOffset = (page - 1) * size
+        val limInf = (page - 1) * size
+        val limSup = limInf + size
 
         var localPage = 1
-        var remaining = size
 
         var totalElements = 0L
 
@@ -35,7 +35,15 @@ class PagingService(
             totalElements += it.getTotalElements()
         }
 
+        val totalPages = if(totalElements % size == 0L) {
+            totalElements / size
+        } else {
+            (totalElements / size) + 1
+        }
+
         val fetchedContents = mutableListOf<Content>()
+
+        var passedOffset = 0
 
         for(repo in repositories) {
 
@@ -43,19 +51,54 @@ class PagingService(
                 break
             }
 
-            val fetchedPage = repo.list(localPage, size)
-            val results = fetchedPage.contents
-            if(results.size >= size) {
-                fetchedContents.addAll(results)
+            var fetchedRepo = repo.list(localPage, size) //primeira pagina do repositorio iterado
+            var currLocalPage = fetchedRepo.contents
+            passedOffset += currLocalPage.size
+
+
+            if(fetchedRepo.totalPages > 1) {
+
+                for (pageNumber in 2 .. fetchedRepo.totalPages) { // segunda pag em diante
+
+                    while (limInf >= passedOffset && localPage < fetchedRepo.totalPages) { // pula paginas que ja foram
+
+                        localPage++
+
+                        fetchedRepo = repo.list(localPage, size)
+                        currLocalPage = fetchedRepo.contents
+
+                        passedOffset += currLocalPage.size
+                    }
+
+                    if(limInf < passedOffset) {
+                        fetchedContents.addAll(currLocalPage.subList(0, currLocalPage.size))
+                    }
+
+                    if(localPage >= fetchedRepo.totalPages) {
+                        break
+                    }
+                }
+            }
+
+            if(limInf < passedOffset) {
+                fetchedContents.addAll(currLocalPage.subList(0, currLocalPage.size))
+            }
+
+            if(fetchedContents.size >= size) {
                 break
             }
 
-            fetchedContents.addAll(results)
-
-            remaining -= results.size
+            localPage = 1
         }
 
-        val results = fetchedContents.subList(currOffset, minOf(size, fetchedContents.size))
-        return createPage(results, page, size, totalElements)
+        val results = fetchedContents.subList(0, minOf(size, fetchedContents.size))
+
+        return PageResponse(
+            results,
+            totalElements,
+            totalPages.toInt(),
+            page,
+            results.size
+        )
     }
 }
