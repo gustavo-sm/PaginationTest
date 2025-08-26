@@ -60,7 +60,7 @@ class PagingService(
             var localPage = localOffset / size + 1
             val localIndex = localOffset % size
 
-            // Loop de busca dentro do repositório atual
+            //dentro do repositório atual
             while (collected < size) {
 
                 val response = repo.list(localPage, size)
